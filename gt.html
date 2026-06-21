@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <title>PWNED // BOFAHAD</title>
+
+    <style>
+        :root {
+            --red: #ff1236;
+            --white: #f5f5f5;
+            --dim: rgba(255,255,255,.50);
+            --black: #000;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            color: var(--white);
+            font-family: "Arial Narrow", Impact, Haettenschweiler, "SFMono-Regular", Consolas, monospace;
+            user-select: none;
+        }
+
+        body {
+            opacity: 0;
+            animation: hardBoot .22s linear forwards;
+        }
+
+        /* VIDEO IS THE PAGE — everything else stays restrained. */
+        .video-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .video-bg iframe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 56.25vw;
+            min-width: 177.78vh;
+            min-height: 100vh;
+            border: 0;
+            transform: translate(-50%, -50%) scale(1.035);
+            pointer-events: none;
+            filter: brightness(.56) contrast(1.34) saturate(.78);
+        }
+
+        .shade {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                linear-gradient(180deg, rgba(0,0,0,.74) 0%, rgba(0,0,0,.05) 27%, rgba(0,0,0,.08) 67%, rgba(0,0,0,.88) 100%),
+                radial-gradient(circle at center, transparent 16%, rgba(0,0,0,.13) 52%, rgba(0,0,0,.72) 100%);
+        }
+
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            opacity: .24;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                transparent 3px,
+                rgba(255,255,255,.025) 4px
+            );
+        }
+
+        .noise {
+            position: fixed;
+            inset: -30%;
+            z-index: 3;
+            pointer-events: none;
+            opacity: .055;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.85'/%3E%3C/svg%3E");
+            animation: grain .16s steps(2) infinite;
+        }
+
+        .red-wash {
+            position: fixed;
+            inset: 0;
+            z-index: 4;
+            pointer-events: none;
+            background: rgba(255,0,30,.12);
+            mix-blend-mode: screen;
+            opacity: 0;
+        }
+
+        body.hit .red-wash { animation: redHit .18s steps(1) both; }
+
+        .tear {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 42%;
+            height: 5px;
+            z-index: 5;
+            opacity: 0;
+            pointer-events: none;
+            background: rgba(255,255,255,.85);
+            box-shadow: 0 0 24px rgba(255,18,54,.9);
+            mix-blend-mode: screen;
+        }
+
+        body.tear-now .tear { animation: tear .14s steps(2) both; }
+
+        .top-status {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid rgba(255,18,54,.68);
+            background: rgba(0,0,0,.50);
+            backdrop-filter: blur(5px);
+            font-family: Consolas, monospace;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2.4px;
+            color: rgba(255,255,255,.55);
+        }
+
+        .top-status strong {
+            color: var(--red);
+            text-shadow: 0 0 12px rgba(255,18,54,.9);
+        }
+
+        .main {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: grid;
+            place-items: center;
+            padding: 72px 28px 92px;
+            pointer-events: none;
+        }
+
+        .takeover {
+            width: min(1180px, 100%);
+            text-align: center;
+            transform: translateY(-1vh);
+        }
+
+        .eyebrow {
+            margin-bottom: 8px;
+            font-family: Consolas, monospace;
+            font-size: clamp(9px, 1vw, 12px);
+            font-weight: 800;
+            letter-spacing: clamp(4px, .85vw, 10px);
+            color: var(--red);
+            text-shadow: 0 0 14px rgba(255,18,54,.75);
+        }
+
+        .pwned {
+            position: relative;
+            display: inline-block;
+            font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+            font-size: clamp(86px, 19vw, 285px);
+            line-height: .78;
+            font-weight: 900;
+            letter-spacing: clamp(-9px, -1vw, -3px);
+            color: #fff;
+            text-transform: uppercase;
+            text-shadow:
+                0 3px 0 rgba(255,255,255,.18),
+                0 18px 50px rgba(0,0,0,.8),
+                0 0 34px rgba(255,255,255,.14);
+            animation: titleImpact .48s cubic-bezier(.12,.82,.18,1) both;
+        }
+
+        .pwned::before,
+        .pwned::after {
+            content: attr(data-text);
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .pwned::before {
+            color: var(--red);
+            transform: translateX(-5px);
+            text-shadow: -5px 0 var(--red);
+        }
+
+        .pwned::after {
+            color: #f8f8f8;
+            transform: translateX(5px);
+            text-shadow: 5px 0 #4ccfff;
+        }
+
+        body.glitch .pwned::before {
+            opacity: .82;
+            clip-path: inset(14% 0 63% 0);
+        }
+
+        body.glitch .pwned::after {
+            opacity: .72;
+            clip-path: inset(63% 0 11% 0);
+        }
+
+        body.glitch .pwned { transform: skewX(-1.6deg) translateX(2px); }
+
+        .owner {
+            margin-top: 26px;
+            font-family: Consolas, monospace;
+            font-size: clamp(11px, 1.35vw, 16px);
+            font-weight: 700;
+            letter-spacing: clamp(2px, .45vw, 6px);
+            text-transform: uppercase;
+            color: rgba(255,255,255,.88);
+            text-shadow: 0 2px 14px #000;
+        }
+
+        .owner strong {
+            color: var(--red);
+            text-shadow: 0 0 15px rgba(255,18,54,.72);
+        }
+
+        .identity {
+            margin-top: 14px;
+            font-family: Consolas, monospace;
+            font-size: clamp(9px, .92vw, 12px);
+            letter-spacing: 1.4px;
+            color: rgba(255,255,255,.52);
+            text-shadow: 0 2px 8px #000;
+        }
+
+        .identity span { color: rgba(255,255,255,.82); }
+        .identity .danger { color: var(--red); }
+
+        .bottom {
+            position: fixed;
+            left: 24px;
+            right: 24px;
+            bottom: 20px;
+            z-index: 20;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: end;
+            gap: 20px;
+            pointer-events: none;
+            font-family: Consolas, monospace;
+            font-size: 9px;
+            letter-spacing: 1.6px;
+            color: rgba(255,255,255,.38);
+            text-shadow: 0 2px 8px #000;
+        }
+
+        .trace {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .trace b {
+            color: rgba(255,255,255,.75);
+            font-weight: 700;
+        }
+
+        .signature {
+            color: #fff;
+            font-family: Impact, sans-serif;
+            font-size: 17px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .signature small {
+            display: block;
+            margin-top: 3px;
+            font-family: Consolas, monospace;
+            font-size: 8px;
+            letter-spacing: 2px;
+            color: var(--red);
+        }
+
+        .right-trace { text-align: right; }
+
+        /* Removed audio-gate styles as audio is now auto-starting */
+
+        @keyframes hardBoot {
+            0% { opacity: 0; filter: brightness(8) contrast(2); }
+            38% { opacity: 1; filter: brightness(2.5) contrast(1.6); }
+            100% { opacity: 1; filter: none; }
+        }
+
+        @keyframes titleImpact {
+            0% { opacity: 0; transform: scale(1.45); filter: blur(14px); }
+            46% { opacity: 1; transform: scale(.97); filter: blur(0); }
+            70% { transform: scale(1.015); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes grain {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(3%,-2%); }
+            50% { transform: translate(-2%,3%); }
+            75% { transform: translate(2%,2%); }
+            100% { transform: translate(-3%,-3%); }
+        }
+
+        @keyframes redHit {
+            0% { opacity: 0; }
+            30% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes tear {
+            0% { opacity: 0; transform: translateY(-130px) scaleY(1); }
+            35% { opacity: .85; }
+            100% { opacity: 0; transform: translateY(220px) scaleY(7); }
+        }
+
+        @media (max-width: 640px) {
+            .top-status { padding: 0 12px; font-size: 8px; letter-spacing: 1.3px; }
+            .top-status .desktop-only { display: none; }
+            .main { padding-left: 14px; padding-right: 14px; }
+            .owner { line-height: 1.7; }
+            .identity { line-height: 1.75; }
+            .bottom { left: 12px; right: 12px; grid-template-columns: 1fr auto; }
+            .right-trace { display: none; }
+            .signature { text-align: right; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="video-bg" aria-hidden="true">
+        <iframe id="yt-bg" allow="autoplay; encrypted-media" title="Background video"></iframe>
+    </div>
+
+    <div class="shade"></div>
+    <div class="scanlines"></div>
+    <div class="noise"></div>
+    <div class="red-wash"></div>
+    <div class="tear"></div>
+
+    <div class="top-status">
+        <span><strong>BREACH CONFIRMED</strong> // SESSION CONTROL LOST</span>
+        <span class="desktop-only">REMOTE OWNER: BOFAHAD</span>
+    </div>
+
+    <main class="main">
+        <section class="takeover">
+            <div class="eyebrow">YOU SHOULD HAVE PATCHED IT</div>
+            <h1 class="pwned" data-text="PWNED">PWNED</h1>
+            <div class="owner">This system now answers to <strong>BOFAHAD</strong></div>
+            <div class="identity">
+                TARGET <span id="ip">LOCATING...</span>
+                &nbsp;•&nbsp; <span id="city">UNKNOWN</span>, <span id="region">UNKNOWN</span>
+                &nbsp;•&nbsp; STATUS <span class="danger">COMPROMISED</span>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bottom">
+        <div class="trace">
+            <span>NETWORK <b id="org">RESOLVING...</b></span>
+            <span>VECTOR <b id="loc">LOCKING...</b></span>
+        </div>
+
+        <div class="signature">
+            BOFAHAD
+            <small>discord.gg/410</small>
+        </div>
+
+        <div class="trace right-trace">
+            <span>ELAPSED <b id="elapsed">00:00:00</b></span>
+            <span>LOCAL TIME <b id="clock">00:00:00</b></span>
+        </div>
+    </footer>
+
+    <script>
+        const YOUTUBE_ID = "8gLHEOIlvfQ";
+        const iframe = document.getElementById("yt-bg");
+
+        const videoId = encodeURIComponent(YOUTUBE_ID);
+        // Auto-play with sound attempt. Browser policies may still mute initially.
+        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&loop=1&playlist=${videoId}&enablejsapi=1`;
+
+        function youtubeCommand(func, args = []) {
+            if (!iframe?.contentWindow) return;
+            iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+        }
+
+        function activateAudio() {
+            youtubeCommand("playVideo");
+            youtubeCommand("unMute");
+            youtubeCommand("setVolume", [85]);  // Slightly lower to avoid distortion
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        }
+
+        // Auto-attempt on load
+        iframe.addEventListener("load", () => {
+            setTimeout(() => {
+                activateAudio();
+                // Additional attempts in case of policy
+                setTimeout(activateAudio, 800);
+                setTimeout(activateAudio, 1800);
+            }, 450);
+        });
+
+        // Fallback user interaction to force audio if needed
+        let userInteracted = false;
+        const forceAudio = () => {
+            if (!userInteracted) {
+                userInteracted = true;
+                activateAudio();
+            }
+        };
+        document.addEventListener("click", forceAudio, { once: true });
+        document.addEventListener("touchstart", forceAudio, { once: true });
+        document.addEventListener("keydown", forceAudio, { once: true });
+
+        const fallback = {
+            ip: "LOCAL_PROXY",
+            city: "UNKNOWN",
+            region: "REDACTED",
+            loc: "VECTOR_LOCKED",
+            org: "MASKED_NETWORK"
+        };
+
+        fetch("https://ipinfo.io/json")
+            .then(response => response.ok ? response.json() : Promise.reject())
+            .then(data => {
+                ["ip", "city", "region", "loc", "org"].forEach(key => {
+                    document.getElementById(key).textContent = String(data[key] || fallback[key]).toUpperCase();
+                });
+            })
+            .catch(() => {
+                Object.entries(fallback).forEach(([key, value]) => {
+                    document.getElementById(key).textContent = value;
+                });
+            });
+
+        const start = Date.now();
+        function pad(value) { return String(value).padStart(2, "0"); }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById("clock").textContent = now.toLocaleTimeString("en-GB", { hour12: false });
+
+            const total = Math.floor((Date.now() - start) / 1000);
+            const hours = Math.floor(total / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            const seconds = total % 60;
+            document.getElementById("elapsed").textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        function pulseGlitch() {
+            document.body.classList.add("glitch");
+            if (Math.random() > .58) document.body.classList.add("hit");
+            if (Math.random() > .70) document.body.classList.add("tear-now");
+
+            setTimeout(() => {
+                document.body.classList.remove("glitch", "hit", "tear-now");
+            }, 90 + Math.random() * 120);
+
+            setTimeout(pulseGlitch, 850 + Math.random() * 2600);
+        }
+
+        setTimeout(pulseGlitch, 700);
+    </script>
+</body>
+</html>
