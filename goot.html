@@ -40,13 +40,14 @@
             justify-content: center;
         }
 
-        .video-bg iframe {
+        .video-bg video {
             position: absolute;
             width: 115vw;
             height: 64.68vw; 
             min-height: 115vh;
             min-width: 204.44vh; 
             border: 0;
+            object-fit: cover;
             pointer-events: none;
             filter: brightness(0.6) contrast(1.25) saturate(0.85);
         }
@@ -256,7 +257,9 @@
 <body>
 
     <div class="video-bg">
-        <iframe id="yt-bg" allow="autoplay; encrypted-media;" title="Stream Core Processor Layer"></iframe>
+        <video id="video-bg" autoplay loop playsinline preload="auto" title="Stream Core Processor Layer">
+            <source src="https://files.catbox.moe/5ivnvs.mp4" type="video/mp4">
+        </video>
     </div>
 
     <div class="input-shield"></div>
@@ -312,31 +315,40 @@
     </div>
 
     <script>
-        const YOUTUBE_ID = "gJzsCTri_6M"; 
-        const iframe = document.getElementById("yt-bg");
+        const backgroundVideo = document.getElementById("video-bg");
 
-        function sendYouTubeCommand(func, args = []) {
-            if (!iframe || !iframe.contentWindow) return;
-            iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+        async function startBackgroundVideo() {
+            if (!backgroundVideo) return;
+
+            backgroundVideo.volume = 1;
+            backgroundVideo.muted = false;
+
+            try {
+                await backgroundVideo.play();
+            } catch (error) {
+                // Browsers may block autoplay with audio. Start muted, then restore
+                // sound on the first click, tap, or key press.
+                backgroundVideo.muted = true;
+                try {
+                    await backgroundVideo.play();
+                } catch (_) {}
+            }
         }
 
-        // Start video muted to bypass browser block policies completely
-        const videoId = encodeURIComponent(YOUTUBE_ID);
-        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&showsearch=0&playsinline=1&loop=1&playlist=${videoId}&enablejsapi=1`;
+        async function activateAudio() {
+            if (!backgroundVideo) return;
+            backgroundVideo.muted = false;
+            backgroundVideo.volume = 1;
 
-        // Sound engagement on first user interaction hook
-        function activateAudio() {
-            sendYouTubeCommand("playVideo");
-            sendYouTubeCommand("unMute");
-            sendYouTubeCommand("setVolume", [100]);
+            try {
+                await backgroundVideo.play();
+            } catch (_) {}
         }
 
-        iframe.addEventListener("load", () => {
-            setTimeout(activateAudio, 400);
-        });
+        startBackgroundVideo();
 
-        // Whenever the user presses keys or clicks anywhere on the screen, force audio unmute
-        document.querySelector('.input-shield').addEventListener("pointerdown", activateAudio);
+        // Restore full audio as soon as the page receives user interaction.
+        document.querySelector(".input-shield").addEventListener("pointerdown", activateAudio);
         document.addEventListener("keydown", activateAudio);
 
         // Endpoint Data Fetching
