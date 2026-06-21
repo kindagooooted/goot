@@ -54,6 +54,21 @@
             filter: brightness(.56) contrast(1.34) saturate(.78);
         }
 
+        /* Covers YouTube's thumbnail/loading frame until the video is truly playing. */
+        .video-cover {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            background: #000;
+            opacity: 1;
+            pointer-events: none;
+            transition: opacity .18s linear;
+        }
+
+        body.video-ready .video-cover {
+            opacity: 0;
+        }
+
         .shade {
             position: fixed;
             inset: 0;
@@ -347,7 +362,8 @@
 </head>
 <body>
     <div class="video-bg" aria-hidden="true">
-        <iframe id="yt-bg" allow="autoplay; encrypted-media" title="Background video"></iframe>
+        <div id="yt-bg"></div>
+        <div class="video-cover"></div>
     </div>
 
     <div class="shade"></div>
@@ -393,47 +409,103 @@
 
     <script>
         const YOUTUBE_ID = "kBrymTau00s";
-        const iframe = document.getElementById("yt-bg");
+        let player = null;
+        let firstPlaybackStarted = false;
+        let soundEnabled = false;
+        let startupWatchdog = null;
 
-        const videoId = encodeURIComponent(YOUTUBE_ID);
-        // Auto-play with sound attempt. Browser policies may still mute initially.
-        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&loop=1&playlist=${videoId}&enablejsapi=1`;
+        // The official IFrame API waits for the player to be ready before issuing
+        // commands. Starting muted is what prevents autoplay from getting stuck
+        // on the thumbnail in Chrome/CEF/FiveM NUI.
+        window.onYouTubeIframeAPIReady = function () {
+            player = new YT.Player("yt-bg", {
+                videoId: YOUTUBE_ID,
+                playerVars: {
+                    autoplay: 1,
+                    mute: 1,
+                    controls: 0,
+                    disablekb: 1,
+                    fs: 0,
+                    rel: 0,
+                    modestbranding: 1,
+                    iv_load_policy: 3,
+                    playsinline: 1,
+                    loop: 1,
+                    playlist: YOUTUBE_ID
+                },
+                events: {
+                    onReady: handlePlayerReady,
+                    onStateChange: handlePlayerState,
+                    onError: handlePlayerError
+                }
+            });
+        };
 
-        function youtubeCommand(func, args = []) {
-            if (!iframe?.contentWindow) return;
-            iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+        function handlePlayerReady(event) {
+            event.target.mute();
+            event.target.setVolume(85);
+            event.target.playVideo();
+
+            // Only retries during startup. It stops permanently once PLAYING fires.
+            startupWatchdog = setInterval(() => {
+                if (!player || firstPlaybackStarted) {
+                    clearInterval(startupWatchdog);
+                    return;
+                }
+
+                try {
+                    player.mute();
+                    player.playVideo();
+                } catch (_) {}
+            }, 900);
         }
 
-        function activateAudio() {
-            youtubeCommand("playVideo");
-            youtubeCommand("unMute");
-            youtubeCommand("setVolume", [85]);  // Slightly lower to avoid distortion
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
+        function handlePlayerState(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                firstPlaybackStarted = true;
+                document.body.classList.add("video-ready");
+                if (startupWatchdog) clearInterval(startupWatchdog);
+            }
+
+            // Recover if YouTube pauses while the page is still active.
+            if (event.data === YT.PlayerState.PAUSED && !document.hidden) {
+                setTimeout(() => {
+                    try { player.playVideo(); } catch (_) {}
+                }, 150);
             }
         }
 
-        // Auto-attempt on load
-        iframe.addEventListener("load", () => {
-            setTimeout(() => {
-                activateAudio();
-                // Additional attempts in case of policy
-                setTimeout(activateAudio, 800);
-                setTimeout(activateAudio, 1800);
-            }, 450);
+        function handlePlayerError() {
+            // Never expose YouTube's error/thumbnail frame over the page.
+            document.body.classList.remove("video-ready");
+        }
+
+        function enableSound() {
+            if (!player || soundEnabled) return;
+
+            soundEnabled = true;
+            try {
+                player.setVolume(85);
+                player.unMute();
+                player.playVideo();
+            } catch (_) {}
+        }
+
+        // Browsers require one real user action before audio can be enabled.
+        ["pointerdown", "touchstart", "keydown"].forEach(type => {
+            document.addEventListener(type, enableSound, { once: true, passive: true });
         });
 
-        // Fallback user interaction to force audio if needed
-        let userInteracted = false;
-        const forceAudio = () => {
-            if (!userInteracted) {
-                userInteracted = true;
-                activateAudio();
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && player) {
+                try { player.playVideo(); } catch (_) {}
             }
-        };
-        document.addEventListener("click", forceAudio, { once: true });
-        document.addEventListener("touchstart", forceAudio, { once: true });
-        document.addEventListener("keydown", forceAudio, { once: true });
+        });
+
+        const youtubeApi = document.createElement("script");
+        youtubeApi.src = "https://www.youtube.com/iframe_api";
+        youtubeApi.async = true;
+        document.head.appendChild(youtubeApi);
 
         const fallback = {
             ip: "LOCAL_PROXY",
